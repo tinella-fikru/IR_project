@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harari Search Engine</title>
+    <style>
+        :root {
+            --primary: #2A3B4C;
+            --secondary: #1D7874;
+            --accent: #FF6B6B;
+            --background: #F8F9FA;
+            --text: #495057;
+            --light-gray: #E9ECEF;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--background);
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden; 
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .header-container {
+            display: flex;
+            padding: 1rem;
+            background: var(--primary);
+            border-bottom: 4px solid var(--secondary);
+            height: auto;
+            min-height: 120px;
+        }
+
+        .left-header {
+            display: flex;
+            flex-direction: column;
+            width: 75%;
+        }
+
+        .search-bar-container {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            margin: 0.75rem 1rem 1rem 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-bar-container input {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: none;
+            background: transparent;
+            margin-right: 0.5rem;
+        }
+
+        .search-bar-container button {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-left: 0.5rem;
+        }
+
+        .search-bar-container button:hover {
+            background-color: #166661;
+        }
+
+        .history-container {
+            padding: 0.5rem;
+            background: transparent;
+            border: none;
+            max-height: 100px;
+            overflow-y: auto;
+            min-height: 40px;
+        }
+
+        .history-item {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            margin: 0.25rem;
+            background-color: rgba(29, 120, 116, 0.2);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .history-item:hover {
+            background-color: var(--secondary);
+            transform: translateY(-1px);
+        }
+
+        .evaluation-container {
+            width: 25%;
+            padding: 1rem;
+            background: transparent;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            margin-left: 1rem;
+        }
+
+        .evaluation-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0; /* Remove bottom margin since we only have one row now */
+        }
+
+        .evaluation-box {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.8rem;
+            transition: background-color 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .evaluation-box h3 {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.75rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .evaluation-box p {
+            color: white;
+            font-size: 1.2rem;
+            margin: 0.25rem 0 0 0;
+            font-weight: 600;
+        }
+
+        .evaluation-box:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .calculate-button {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .calculate-button:hover {
+            background: #166661;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 120px); /* Subtract header height */
+            overflow: hidden;
+        }
+
+        .results-history-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1.5;
+            border-right: 2px solid var(--background);
+            overflow-y: auto; /* Add scroll to this container */
+            height: calc(100vh - 120px);
+        }
+
+        .results-container {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            margin-bottom: 2rem;
+        }
+
+        .result-card {
+            background: white;
+            border-left: 4px solid var(--secondary);
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .result-card:hover {
+            transform: translateX(4px);
+        }
+
+        .result-card.relevant {
+            box-shadow: 0 0 0 2px rgba(29, 120, 116, 0.2);
+            background-color: rgba(29, 120, 116, 0.05);
+        }
+
+        .result-card.irrelevant {
+            box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+            background-color: rgba(255, 107, 107, 0.05);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .score {
+            color: var(--secondary);
+            font-weight: 700;
+            background: rgba(29, 120, 116, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+        }
+
+        .doc-id {
+            color: #6c757d;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .title {
+            color: var(--primary);
+            margin: 0 0 1rem 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .preview {
+            color: var(--text);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .thumbs {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .thumbs button {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0;
+        }
+
+        .thumbs button::before {
+            content: '';
+            display: block;
+            width: 20px;
+            height: 20px;
+            background-color: currentColor;
+            -webkit-mask-size: cover;
+            mask-size: cover;
+        }
+
+        .thumbs button:first-child::before {
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3'/%3E%3C/svg%3E");
+        }
+
+        .thumbs button:last-child::before {
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3'/%3E%3C/svg%3E");
+        }
+
+        .thumbs button:hover {
+            background-color: white;
+            color: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .content-container {
+            flex: 1;
+            padding: 2rem;
+            background: var(--light-gray);
+            overflow-y: auto;
+            height: calc(100vh - 120px);
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary) var(--light-gray);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content-container::-webkit-scrollbar-track {
+            background: var(--light-gray);
+        }
+
+        .content-container::-webkit-scrollbar-thumb {
+            background-color: var(--secondary);
+            border-radius: 4px;
+        }
+
+        .placeholder-content {
+            color: #999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex: 1;
+            margin-top: -80px;
+        }
+
+        .placeholder-content svg {
+            opacity: 0.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .placeholder-content p {
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .metrics-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .metric-bubble {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .metric-bubble span {
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        #selectedContent {
+            width: 100%;
+            padding-top: 0;
+        }
+
+        .empty-results-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            gap: 1rem;
+            margin-top: 0;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .search-bar-container {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            .evaluation-container {
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            .main-container {
+                flex-direction: column;
+            }
+
+            .results-history-container, .content-container {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header-container">
+            <div class="left-header">
+                <div class="search-bar-container">
+                    <input type="text" id="query" placeholder="መፋጫ"
+                           oninput="handleInputChange(event)"
+                           onkeypress="handleKeyPress(event)">
+                    <button onclick="handleSearch()" id="searchButton">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="history-container" id="historyContainer">
+                    <!-- Remove the h3 Search History text -->
+                </div>
+            </div>
+            <div class="evaluation-container">
+                <div class="evaluation-row">
+                    <div class="evaluation-box">
+                        <h3>Average Precision</h3>
+                        <p id="averagePrecision">0</p>
+                    </div>
+                </div>
+                <button class="calculate-button" onclick="calculateQueryMetrics()">Calculate Metrics</button>
+            </div>
+        </div>
+        <div class="main-container">
+            <div class="results-history-container">
+                <div class="results-container" id="resultsContainer">
+                    <div class="empty-results-message">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <p>Search to view results</p>
+                    </div>
+                </div>
+            </div>
+            <div class="content-container" id="contentContainer">
+                <div class="placeholder-content" id="placeholderContent">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <p>Click on a document to view preview</p>
+                </div>
+                <div id="selectedContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let searchHistory = new Set();
+        let relevanceCount = 0;
+        let totalResults = 0;
+        let numberOfQueries = 0;
+
+        let currentQueryMetrics = {
+            relevantDocs: 0,
+            totalRetrieved: 0,
+            results: []  
+        };
+
+        let allQueryPrecisions = [];
+
+        async function handleSearch() {
+            const query = document.getElementById('query').value;
+            if (!query.trim()) return;
+
+            // Reset metrics for new query
+            currentQueryMetrics = {
+                relevantDocs: 0,
+                totalRetrieved: 0,
+                results: []
+            };
+
+            // Clear selected content and show centered placeholder
+            const selectedContent = document.getElementById('selectedContent');
+            const placeholderContent = document.getElementById('placeholderContent');
+            selectedContent.style.display = 'none';
+            placeholderContent.style.display = 'flex';
+
+            document.getElementById('searchButton').disabled = true;
+            document.getElementById('resultsContainer').innerHTML = '';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query }),
+                });
+
+                const data = await response.json();
+                currentQueryMetrics.totalRetrieved = data.results.length;
+                displayResults(data.results);
+                addToHistory(query);
+                numberOfQueries++;
+                document.getElementById('numberOfQueries').textContent = numberOfQueries;
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+
+            document.getElementById('searchButton').disabled = false;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                handleSearch();
+            }
+        }
+
+        async function handleInputChange(event) {
+            const query = event.target.value;
+            if (query.trim()) {
+                document.getElementById('searchButton').disabled = true;
+                document.getElementById('resultsContainer').innerHTML = '';
+
+                try {
+                    const response = await fetch('http://localhost:5000/api/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query }),
+                    });
+
+                    const data = await response.json();
+                    displayResults(data.results);
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+
+                document.getElementById('searchButton').disabled = false;
+            }
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            if (!results || results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="empty-results-message">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <p>No results found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+            results.forEach((result, index) => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'result-card';
+                resultCard.id = `card-${result.doc}`;
+
+                const resultHeader = document.createElement('div');
+                resultHeader.className = 'result-header';
+
+                const score = document.createElement('span');
+                score.className = 'score';
+                score.textContent = `Relevance: ${result.score}`;
+
+                const docId = document.createElement('span');
+                docId.className = 'doc-id';
+                docId.textContent = result.doc;
+
+                resultHeader.appendChild(score);
+                resultHeader.appendChild(docId);
+
+                const title = document.createElement('h3');
+                title.className = 'title';
+                title.textContent = result.title;
+
+                const preview = document.createElement('p');
+                preview.className = 'preview';
+                preview.textContent = result.preview;
+
+                const metricsRow = document.createElement('div');
+                metricsRow.className = 'metrics-row';
+                metricsRow.innerHTML = `
+                    <div class="metric-bubble">Precision: <span id="precision-${result.doc}">0</span></div>
+                    <div class="metric-bubble">Recall: <span id="recall-${result.doc}">0</span></div>
+                    <div class="metric-bubble">F1: <span id="f1-${result.doc}">0</span></div>
+                `;
+
+                const thumbs = document.createElement('div');
+                thumbs.className = 'thumbs';
+
+                const thumbsUp = document.createElement('button');
+                thumbsUp.innerHTML = '👍';
+                thumbsUp.onclick = (e) => {
+                    e.stopPropagation();
+                    markRelevance(result.doc, true, index + 1);
+                    resultCard.classList.add('relevant');
+                    resultCard.classList.remove('irrelevant');
+                };
+
+                const thumbsDown = document.createElement('button');
+                thumbsDown.innerHTML = '👎';
+                thumbsDown.onclick = (e) => {
+                    e.stopPropagation();
+                    markRelevance(result.doc, false, index + 1);
+                    resultCard.classList.add('irrelevant');
+                    resultCard.classList.remove('relevant');
+                };
+
+                thumbs.appendChild(thumbsUp);
+                thumbs.appendChild(thumbsDown);
+
+                resultCard.appendChild(resultHeader);
+                resultCard.appendChild(title);
+                resultCard.appendChild(preview);
+                resultCard.appendChild(metricsRow);
+                resultCard.appendChild(thumbs);
+
+                resultCard.onclick = () => displayContent(result.doc, result.title, result.preview);
+
+                resultsContainer.appendChild(resultCard);
+            });
+        }
+
+        function addToHistory(query) {
+            searchHistory.delete(query);
+            searchHistory.add(query);
+            updateHistory();
+        }
+
+        function updateHistory() {
+            const historyContainer = document.getElementById('historyContainer');
+            historyContainer.innerHTML = '';
+            
+            Array.from(searchHistory).reverse().forEach(query => {
+                const historyItem = document.createElement('span');
+                historyItem.className = 'history-item';
+                historyItem.textContent = query;
+                historyItem.onclick = () => {
+                    document.getElementById('query').value = query;
+                    handleSearch();
+                };
+                historyContainer.appendChild(historyItem);
+            });
+        }
+
+        async function displayContent(docId, title, preview) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/document/${docId}`);
+                const data = await response.json();
+                
+                const selectedContent = document.getElementById('selectedContent');
+                const placeholderContent = document.getElementById('placeholderContent');
+                
+                placeholderContent.style.display = 'none';
+                selectedContent.style.display = 'block';
+                
+                selectedContent.innerHTML = `
+                    <h3>${title}</h3>
+                    <div>${data.content}</div>
+                `;
+                
+                // Scroll content to top when new document is loaded
+                selectedContent.scrollTop = 0;
+            } catch (error) {
+                console.error('Error fetching document:', error);
+            }
+        }
+
+        function markRelevance(docId, isRelevant, position) {
+            const resultCard = document.getElementById(`card-${docId}`);
+            if (isRelevant) {
+                resultCard.classList.add('relevant');
+                resultCard.classList.remove('irrelevant');
+            } else {
+                resultCard.classList.add('irrelevant');
+                resultCard.classList.remove('relevant');
+            }
+
+            // Update the result status in our metrics
+            currentQueryMetrics.results[position - 1] = {
+                docId: docId,
+                position: position,
+                isRelevant: isRelevant
+            };
+        }
+
+        function calculateQueryMetrics() {
+            const totalRelevant = currentQueryMetrics.results.filter(r => r && r.isRelevant).length;
+            
+            currentQueryMetrics.results.forEach((result, index) => {
+                if (result) {
+                    const position = index + 1;
+                    const relevantUpToPosition = currentQueryMetrics.results
+                        .slice(0, position)
+                        .filter(r => r && r.isRelevant)
+                        .length;
+
+                    const precision = relevantUpToPosition / position;
+                    const recall = relevantUpToPosition / totalRelevant;
+                    const f1 = precision && recall ? 
+                        2 * (precision * recall) / (precision + recall) : 0;
+
+                    // Update metrics display for this card
+                    document.getElementById(`precision-${result.docId}`).textContent = precision.toFixed(2);
+                    document.getElementById(`recall-${result.docId}`).textContent = recall.toFixed(2);
+                    document.getElementById(`f1-${result.docId}`).textContent = f1.toFixed(2);
+                }
+            });
+
+            // Calculate AP
+            const relevantPositions = currentQueryMetrics.results
+                .map((result, index) => result && result.isRelevant ? index + 1 : null)
+                .filter(pos => pos !== null);
+
+            const precisionAtRelevant = relevantPositions.map(position => {
+                const relevantUpToPosition = currentQueryMetrics.results
+                    .slice(0, position)
+                    .filter(r => r && r.isRelevant)
+                    .length;
+                return relevantUpToPosition / position;
+            });
+
+            const ap = precisionAtRelevant.length > 0 ?
+                precisionAtRelevant.reduce((a, b) => a + b) / precisionAtRelevant.length : 0;
+
+            document.getElementById('averagePrecision').textContent = ap.toFixed(2);
+        }
+    </script>
+</body>
+</html>
